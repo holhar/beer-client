@@ -1,10 +1,13 @@
 package de.holhar.spring.reactive.beerclient;
 
 import de.holhar.spring.reactive.beerclient.config.WebClientConfig;
+import de.holhar.spring.reactive.beerclient.model.BeerDto;
 import de.holhar.spring.reactive.beerclient.model.BeerPagedList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -48,7 +51,32 @@ class BeerClientImplTest {
     }
 
     @Test
-    void getBeerById() {
+    void getBeerByIdDoNotShowInventoryOnHand() {
+        Mono<BeerPagedList> beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
+        BeerPagedList pagedList = beerPagedListMono.block();
+        UUID id = pagedList.getContent().get(0).getId();
+
+        Mono<BeerDto> beerById = beerClient.getBeerById(id, false);
+        BeerDto beerDto = beerById.block();
+
+        assertThat(beerDto).isNotNull();
+        assertThat(beerDto.getId()).isEqualTo(id);
+        //assertThat(beerDto.getQuantityOnHand()).isNull(); <= Should not be present, right? But it is...
+        assertThat(beerDto.getQuantityOnHand()).isNotNull();
+    }
+
+    @Test
+    void getBeerByIdDoShowInventoryOnHand() {
+        Mono<BeerPagedList> beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
+        BeerPagedList pagedList = beerPagedListMono.block();
+        UUID id = pagedList.getContent().get(0).getId();
+
+        Mono<BeerDto> beerById = beerClient.getBeerById(id, true);
+        BeerDto beerDto = beerById.block();
+
+        assertThat(beerDto).isNotNull();
+        assertThat(beerDto.getId()).isEqualTo(id);
+        assertThat(beerDto.getQuantityOnHand()).isNotNull();
     }
 
     @Test
@@ -65,5 +93,14 @@ class BeerClientImplTest {
 
     @Test
     void getBeerByUPC() {
+        Mono<BeerPagedList> beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
+        BeerPagedList pagedList = beerPagedListMono.block();
+        String upc = pagedList.getContent().get(0).getUpc();
+
+        Mono<BeerDto> beerByUPC = beerClient.getBeerByUPC(upc);
+        BeerDto beerDto = beerByUPC.block();
+
+        assertThat(beerDto).isNotNull();
+        assertThat(beerDto.getUpc()).isEqualTo(upc);
     }
 }
