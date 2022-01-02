@@ -5,8 +5,11 @@ import de.holhar.spring.reactive.beerclient.model.BeerDto;
 import de.holhar.spring.reactive.beerclient.model.BeerPagedList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -81,14 +84,48 @@ class BeerClientImplTest {
 
     @Test
     void createBeer() {
+        BeerDto beerDto = BeerDto.builder()
+                .beerName("Dogfishhead 90 Min IPA")
+                .beerStyle("IPA")
+                .upc("234580970")
+                .price(new BigDecimal("10.99"))
+                .build();
+
+        Mono<ResponseEntity<Void>> responseEntityMono = beerClient.createBeer(beerDto);
+
+        ResponseEntity responseEntity = responseEntityMono.block();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Test
     void updateBeer() {
+        Mono<BeerPagedList> beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
+        BeerPagedList pagedList = beerPagedListMono.block();
+        BeerDto beerDto = pagedList.getContent().get(0);
+
+        BeerDto updatedBeer = BeerDto.builder()
+                .beerName("Really Good Beer")
+                .beerStyle(beerDto.getBeerStyle())
+                .price(beerDto.getPrice())
+                .upc(beerDto.getUpc())
+                .build();
+
+        Mono<ResponseEntity<Void>> responseEntityMono = beerClient.updateBeer(beerDto.getId(), updatedBeer);
+
+        ResponseEntity<Void> responseEntity = responseEntityMono.block();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
     @Test
     void deleteBeerById() {
+        Mono<BeerPagedList> beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
+        BeerPagedList pagedList = beerPagedListMono.block();
+        UUID id = pagedList.getContent().get(0).getId();
+
+        Mono<ResponseEntity<Void>> responseEntityMono = beerClient.deleteBeerById(id);
+
+        ResponseEntity<Void> responseEntity = responseEntityMono.block();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
     @Test
